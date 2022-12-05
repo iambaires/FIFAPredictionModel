@@ -43,40 +43,55 @@ pl_18_19 = pd.read_csv("season-1819_csv.csv")
 pl_17_18 = pd.read_csv("season-1718_csv.csv")
 
 fifa_ratings = pd.read_csv("FIFA18_official_data.csv")
+fifa_ratings2 = pd.read_csv("FIFA17_official_data.csv")
 
 # Sort data by most recent date
 pl_18_19 = pl_18_19.iloc[::-1]
+pl_17_18 = pl_17_18.iloc[::-1]
 
 # Extract relevant columns
 pl_18_19 = pl_18_19[["Date", "HomeTeam", "AwayTeam", "FTR"]]
-# print(pl_18_19)
+pl_17_18 = pl_17_18[["Date", "HomeTeam", "AwayTeam", "FTR"]]
 
 # Extract a set of the team names
 teams = pl_18_19["HomeTeam"]
+teams2 = pl_17_18["HomeTeam"]
+
 team_name_set = {'Arsenal'}
+team_name_set2 = {'Arsenal'}
 
 for name in teams:
     team_name_set.add(name)
 
+for name in teams2:
+    team_name_set2.add(name)
+
 team_names = list(team_name_set)
 team_names.sort()
+
+team_names2 = list(team_name_set2)
+team_names2.sort()
+
 team_points_data = {}
 team_check = {}
 team_ratings = {}
+
+team_points_data2 = {}
+team_check2 = {}
+team_ratings2 = {}
 
 for team in team_name_set:
     team_points_data[team] = 0
     team_check[team] = 0
     team_ratings[team] = []
 
+for team in team_name_set2:
+    team_points_data2[team] = 0
+    team_check2[team] = 0
+    team_ratings2[team] = []
+
 for index in fifa_ratings.index:
     club = fifa_ratings['Club'][index]
-
-    # closest_name = 'Name'
-    # for name in team_names:
-    #     distance = jellyfish.levenshtein_distance(name, str(club))
-    #     if distance < 1:
-    #         closest_name = name
 
     if club in team_names:
         # name = fifa_ratings['Name'][index]
@@ -89,6 +104,26 @@ for team in team_ratings:
     lst = team_ratings[team]
     team_overall_rating = sum(lst) / len(lst)
     team_ratings[team] = team_overall_rating
+
+for index in fifa_ratings2.index:
+    club = fifa_ratings2['Club'][index]
+
+    # closest_name = 'Name'
+    # for name in team_names:
+    #     distance = jellyfish.levenshtein_distance(name, str(club))
+    #     if distance < 1:
+    #         closest_name = name
+
+    if club in team_names2:
+        rating = fifa_ratings2['Overall'][index]
+        team_ratings2[club].append(rating)
+
+for team in team_ratings2:
+    team_ratings2[team].sort(reverse=True)
+    team_ratings2[team] = team_ratings2[team][:15]
+    lst = team_ratings2[team]
+    team_overall_rating = sum(lst) / len(lst)
+    team_ratings2[team] = team_overall_rating
 
 num_games = 5
 
@@ -117,6 +152,31 @@ for index in pl_18_19.index:
         if team_check[away_team] <= num_games:
             team_points_data[away_team] += 1
 
+for index in pl_17_18.index:
+    home_team = pl_17_18['HomeTeam'][index]
+    away_team = pl_17_18['AwayTeam'][index]
+    ftr = pl_17_18['FTR'][index]
+    date = pl_17_18['Date'][index]
+    team_check2[home_team] += 1
+    team_check2[away_team] += 1
+    if 'H' in ftr:
+        if team_check2[home_team] <= num_games:
+            team_points_data2[home_team] += 3
+
+    elif 'A' in ftr:
+
+        if team_check2[away_team] <= num_games:
+
+            team_points_data2[away_team] += 3
+
+    else:
+
+        if team_check2[home_team] <= num_games:
+            team_points_data2[home_team] += 1
+
+        if team_check2[away_team] <= num_games:
+            team_points_data2[away_team] += 1
+
 with open('football.csv', 'w', encoding='UTF8', newline='') as f:
     writer = csv.writer(f)
     # header = ["Team", "Form"]
@@ -137,6 +197,23 @@ with open('football.csv', 'w', encoding='UTF8', newline='') as f:
         home_rating = float(team_ratings[home_team])
         away_rating = float(team_ratings[away_team])
         outcome = pl_18_19['FTR'][index]
+        if 'H' in outcome:
+            outcome = float(3)
+        elif 'A' in outcome:
+            outcome = float(2)
+        elif 'D' in outcome:
+            outcome = float(1)
+
+        writer.writerow([home_form, home_rating, away_form, away_rating, outcome])
+
+    for index in pl_17_18.index:
+        home_team = pl_17_18['HomeTeam'][index]
+        away_team = pl_17_18['AwayTeam'][index]
+        home_form = float(team_points_data2[home_team]/(num_games*3))
+        away_form = float(team_points_data2[away_team]/(num_games*3))
+        home_rating = float(team_ratings2[home_team])
+        away_rating = float(team_ratings2[away_team])
+        outcome = pl_17_18['FTR'][index]
         if 'H' in outcome:
             outcome = float(3)
         elif 'A' in outcome:
